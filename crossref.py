@@ -34,7 +34,7 @@ def main():
     tads = open(sys.argv[3])
     TFBSDir = sys.argv[4]
     interaction = sys.argv[5]
-    
+
     genes_peaks_TFBS = {}
     peakchrom = {}
     TF_binding = {}
@@ -42,21 +42,21 @@ def main():
     peak_binding = {}
     gene_info = {}
     path=TFBSDir
-    datapath=TFBSDir.replace("results/outputDir/TFBS","data")
+    datapath="./data/"
     filename=filep.split("/")[-1].replace(".promoters.bed", "")
     pb=1/300
     delthresh=0.1
-    
+
     if interaction =='True':
         delthresh=0.25
-    
+
     print("delthresh=",delthresh)
     print("reading gene peaks data... 1/8")
 
     #GETTING PROMOTER PEAKS INFO
     for line in prom.readlines():
         chrom,start,end,peak_name, gene_name = line.strip().split("\t")
-         
+
         for chunk in gene_name.split(";"):
             key, value = chunk.split("=")
             gene_info[key] = value
@@ -69,14 +69,14 @@ def main():
         peakchrom[peak_name]['start']=start
         peakchrom[peak_name]['genes']=peakchrom[peak_name].get('genes', set())
         peakchrom[peak_name]['genes'].add(gene)
-    
+
     #GETTING FANTOM5 ENHANCER PEAKS INFO
     for line in fant.readlines():
         chrom,start,end,peak_name, gene_name = line.strip().split("\t")
         gene_name = gene_name.split(";")
-                
+
         if len(gene_name)>2:
-            gene = gene_name[2]        
+            gene = gene_name[2]
         genes_peaks_TFBS[gene]=genes_peaks_TFBS.get(gene, {})
         genes_peaks_TFBS[gene]['fant']=genes_peaks_TFBS[gene].get('fant', set())
         genes_peaks_TFBS[gene]['fant'].add(peak_name)
@@ -85,12 +85,12 @@ def main():
         peakchrom[peak_name]['start']=start
         peakchrom[peak_name]['genes']=peakchrom[peak_name].get('genes', set())
         peakchrom[peak_name]['genes'].add(gene)
-    
+
     #GETTING TADS ENHANCER PEAKS INFO
     for line in tads.readlines():
         chrom,start,end,peak_name, gene_name = line.strip().split("\t")
         gene = gene_name.split("|")
-        
+
         for i in gene:
             genes_peaks_TFBS[i]=genes_peaks_TFBS.get(i, {})
             genes_peaks_TFBS[i]['tads']=genes_peaks_TFBS[i].get('tads', set())
@@ -100,24 +100,26 @@ def main():
             peakchrom[peak_name]['start']=start
             peakchrom[peak_name]['genes']=peakchrom[peak_name].get('genes', set())
             peakchrom[peak_name]['genes'].add(i)
-    
+
     prom.close()
     fant.close()
-    tads.close()           
-    
+    tads.close()
+
     print("reading TFBS data... 2/8")
-    
+
     bw = pyBigWig.open(os.path.abspath(datapath+filename+".wig.bw"))  #BigWig file to get signal info
-    
+
     #Getting all motifs info from SARUS motif analysis
     for types in ["promoters","FANTOM5","TADS"]:
         print("from", types, "...")
+        print(os.path.join(path,types, "*.bed"))
         if types == "promoters":
             abvtypes = "prom"
         else:
             abvtypes = "enh"
-        for tf in glob.glob(os.path.join(path+types, "*.bed")):
+        for tf in glob.glob(os.path.join(path,types, "*.bed")):
             name = tf.split("/")[-1].replace(".bed","")
+            print(name)
             if name in genes_peaks_TFBS:
                 TFBS=open(tf)
                 TF_binding[name]=TF_binding.get(name, {})
@@ -131,33 +133,33 @@ def main():
                         peak_binding[peak][name][abvtypes][pos1+"-"+pos2]['affscore']=1/(1+(1-pb)/(pb*2**float(score)))
                         peak_binding[peak][name][abvtypes][pos1+"-"+pos2]['sens']=sens
                 TFBS.close()
-    
+
     #listTF contains all actively transcribed TFs (more than one peak in the promoter)
     for i in TF_binding:
         if 'prom' in genes_peaks_TFBS[i]:
             if len(genes_peaks_TFBS[i]['prom'])>1:
                 listTF.append(i)
-    
+
     #middle of the peak, used to find position score
-    with open(datapath+filename, "r") as f:  
+    with open(datapath+filename, "r") as f:
         for line in f.readlines():
             _,_,_,peak,_,_,_,_,_,mid = line.strip().split("\t")
             if peak in peak_binding:
-                peak_binding[peak]['mid']=mid 
-    
+                peak_binding[peak]['mid']=mid
+
     print(time.ctime())
     print("writing summary file")
     ### summary file read by networks.py
-    
+
     #TF motifs are found in peaks, peaks are assigned to genes
     #We cross these 2 informations to get which TFs regulate which genes
-    
+
     Gsub_path=filep.replace(".promoters.bed",".summary.bed")
     cpt=0
     tes=len(peak_binding)
     with open(Gsub_path,"w") as file:
         for peak in peak_binding:
-            
+
             cpt+=1
             if cpt==int(0.25*tes):  #to have some progress check while writing
                 print("25% ...")
@@ -165,11 +167,11 @@ def main():
                 print("50% ...")
             if cpt==int(0.75*tes):
                 print("75% ...")
-                
+
             chrom=peakchrom[peak]['chrom']
             start=int(peakchrom[peak]['start'])
             mid=int(peak_binding[peak]['mid'])
-            
+
             for tf in peak_binding[peak]:
                 if tf!='mid' and tf in listTF:  #Only actively transcribed TFs are considerated
                     for types in peak_binding[peak][tf]:
@@ -186,6 +188,6 @@ def main():
                             sens=peak_binding[peak][tf][types][motif]['sens']
                             file.write(chrom+"\t"+str(start+pos1)+"\t"+str(start+pos2)+"\t"+tf+"_"+','.join(genes)+"\t"+str(score)+"\t"+sens+"\t"+peak+"\t"+types+"\n")
 
-    
+
 if __name__ == '__main__':
     main()
