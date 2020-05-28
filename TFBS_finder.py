@@ -23,6 +23,7 @@ def main():
     
     for line in hoco_to_tf.readlines()[1:]:
         realname[line.strip().split("\t")[0]] = line.strip().split("\t")[1]
+        print("line"+realname[line.strip().split("\t")[0]])
     hoco_to_tf.close()
     
     scriptPath=os.path.dirname(os.path.realpath(__file__))
@@ -35,7 +36,9 @@ def main():
         os.mkdir(outPath)
 
     for tf in glob.glob(os.path.join(path, "*.pwm")):
+        print(tf)
         name = tf.split("/")[-1].replace(".pwm","")
+        print(name)
         threshold = thresholds[name]
         command='java -cp '+ scriptPath+'sarus-01Mar2018.jar ru.autosome.SARUS '+ input_fasta.name +' '+ tf+' '+  threshold+ ' --output-bed skipn'
 
