@@ -46,4 +46,5 @@ def main():
         subprocess.call(["java", "-cp", scriptPath+"/sarus-01Mar2018.jar", "ru.autosome.SARUS", input_fasta.name, tf, threshold, "--output-bed", "skipn"], stdout=open(outPath+realname[name]+".bed", "w"))
 
 if __name__ == '__main__':
+    print("running main")
     main()
