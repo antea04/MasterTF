@@ -7,13 +7,15 @@ def main():
     open_region = {}
     open_peak = {}
     prev_chrom = None
+    # print(sys.stdin) <_io.TextIOWrapper name='<stdin>' mode='r' encoding='UTF-8'>
 
+    
     for line in sys.stdin.readlines():
         pieces = line.strip().split("\t")
         (chrom, start, end, kind, name), rest = pieces[:5], pieces[5:]
         start = int(start)
         end = int(end)
-
+        
         if chrom != prev_chrom:
             open_region = {}
             open_peak = {}
@@ -29,13 +31,11 @@ def main():
             for peak, (peak_start, peak_end) in open_peak.items():
                 print(chrom, peak_start, peak_end, peak, region, sep="\t")
 
-        if kind == 'peak':
+        if kind != sys.argv[1]:
             peak, peak_start, peak_end = name, start, end
             open_peak[peak] = peak_start, peak_end
             for region in open_region:
                 print(chrom, peak_start, peak_end, peak, region, sep="\t")
-        
-
         prev_chrom = chrom
 
 if __name__ == '__main__':
