@@ -105,3 +105,5 @@ def main(tf_motif_path, chipseq_peak_path):
 
     chipseq_peaks.to_csv("./{}_peaks.csv".format(chipseq_peaks_path), sep="\t")
     print("saved ChIP-seq peaks at ./{}_peaks.csv".format(chipseq_peaks_path))
+
+main("./exploration/CTCF_result.bed", "./exploration/Chipseq_CTCF_GM12878_peaks")
